@@ -1,35 +1,12 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
 import { toast } from 'sonner';
-
-type CaseType = {
-  id: number;
-  name: string;
-  price: number;
-  minWin: number;
-  maxWin: number;
-  rarity: 'bronze' | 'silver' | 'gold' | 'platinum' | 'legendary';
-  icon: string;
-};
-
-type HistoryItem = {
-  id: number;
-  caseName: string;
-  amount: number;
-  result: 'win' | 'loss';
-  timestamp: Date;
-};
-
-type TopPlayer = {
-  id: number;
-  name: string;
-  balance: number;
-  totalWins: number;
-};
+import { CaseType, HistoryItem, TopPlayer } from '@/types';
+import CaseOpeningDialog from '@/components/CaseOpeningDialog';
+import PaymentDialogs from '@/components/PaymentDialogs';
 
 const Index = () => {
   const INITIAL_BALANCE = 5;
@@ -256,7 +233,7 @@ const Index = () => {
                     <h3 className="font-bold text-lg text-red-400">Секретный</h3>
                     <div className="space-y-1 text-sm text-muted-foreground">
                       <p>Выигрыш: 0₽ - {(balance * 10).toFixed(0)}₽</p>
-                      <p className="text-xs text-red-400">Все или ничего!</p>
+                      <p className="text-xs text-red-400">Всё или ничего!</p>
                     </div>
                     <Button className="w-full bg-red-600 hover:bg-red-700 text-white font-bold">
                       Ва-банк {balance.toFixed(2)}₽
@@ -363,128 +340,23 @@ const Index = () => {
         </Tabs>
       </main>
 
-      <Dialog open={!!openCase} onOpenChange={() => setOpenCase(null)}>
-        <DialogContent className="max-w-2xl bg-card border-primary/30">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-center glow-gold-text">
-              {openCase?.name}
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="py-8">
-            {isSpinning ? (
-              <div className="text-center space-y-6">
-                <div className="text-8xl animate-bounce">{openCase?.icon}</div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="w-3 h-3 bg-primary rounded-full animate-pulse"></div>
-                    <div className="w-3 h-3 bg-primary rounded-full animate-pulse [animation-delay:0.2s]"></div>
-                    <div className="w-3 h-3 bg-primary rounded-full animate-pulse [animation-delay:0.4s]"></div>
-                  </div>
-                  <p className="text-xl font-semibold text-primary">Открытие кейса...</p>
-                </div>
-              </div>
-            ) : spinResult !== null ? (
-              <div className="text-center space-y-6">
-                <div className="text-8xl">{openCase?.icon}</div>
-                <div className="space-y-3">
-                  <p className="text-3xl font-bold text-primary glow-gold-text">{spinResult}₽</p>
-                  <p className={`text-xl font-semibold ${
-                    (spinResult - (openCase?.price || 0)) > 0 ? 'text-green-500' : 'text-red-500'
-                  }`}>
-                    {(spinResult - (openCase?.price || 0)) > 0 ? '+' : ''}
-                    {spinResult - (openCase?.price || 0)}₽
-                  </p>
-                  <Button 
-                    onClick={() => setOpenCase(null)}
-                    className="mt-4 bg-primary hover:bg-primary/90 text-black font-bold"
-                  >
-                    Закрыть
-                  </Button>
-                </div>
-              </div>
-            ) : null}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <CaseOpeningDialog
+        openCase={openCase}
+        isSpinning={isSpinning}
+        spinResult={spinResult}
+        onClose={() => setOpenCase(null)}
+      />
 
-      <Dialog open={paymentDialog} onOpenChange={setPaymentDialog}>
-        <DialogContent className="bg-card border-primary/30">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold glow-gold-text">Пополнение баланса</DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-3 py-4">
-            <Button 
-              onClick={() => handleDeposit('Яндекс.Кассу')}
-              className="w-full h-14 bg-gradient-to-r from-red-600 to-yellow-500 hover:from-red-700 hover:to-yellow-600 text-white font-bold text-lg"
-            >
-              <Icon name="Wallet" size={24} />
-              Яндекс.Касса
-            </Button>
-            
-            <Button 
-              onClick={() => handleDeposit('Сбербанк')}
-              className="w-full h-14 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white font-bold text-lg"
-            >
-              <Icon name="CreditCard" size={24} />
-              Сбербанк
-            </Button>
-            
-            <Button 
-              onClick={() => handleDeposit('Криптовалюту')}
-              className="w-full h-14 bg-gradient-to-r from-orange-600 to-yellow-500 hover:from-orange-700 hover:to-yellow-600 text-white font-bold text-lg"
-            >
-              <Icon name="Bitcoin" size={24} />
-              Криптовалюта
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={withdrawDialog} onOpenChange={setWithdrawDialog}>
-        <DialogContent className="bg-card border-primary/30">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold glow-gold-text">Вывод средств</DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-3">
-              <div className="p-4 bg-card/50 rounded-lg border border-border">
-                <p className="text-sm text-muted-foreground mb-1">Текущий баланс:</p>
-                <p className="text-2xl font-bold text-foreground">{balance.toFixed(2)}₽</p>
-              </div>
-              
-              <div className="p-4 bg-primary/10 rounded-lg border border-primary/30">
-                <p className="text-sm text-muted-foreground mb-1">Доступно для вывода (чистая прибыль):</p>
-                <p className="text-3xl font-bold text-primary">{totalProfit > 0 ? totalProfit.toFixed(2) : '0.00'}₽</p>
-              </div>
-            </div>
-            
-            <div className="space-y-3">
-              <Button 
-                onClick={handleWithdraw}
-                className="w-full h-12 bg-primary hover:bg-primary/90 text-black font-bold"
-                disabled={totalProfit < 100}
-              >
-                Вывести на карту (мин. 100₽)
-              </Button>
-              
-              <Button 
-                onClick={handleWithdraw}
-                className="w-full h-12 bg-gradient-to-r from-orange-600 to-yellow-500 hover:from-orange-700 hover:to-yellow-600 text-white font-bold"
-                disabled={totalProfit < 50}
-              >
-                Вывести в крипту (мин. 50₽)
-              </Button>
-            </div>
-            
-            <p className="text-xs text-muted-foreground text-center">
-              Вывод обрабатывается в течение 24 часов
-            </p>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <PaymentDialogs
+        paymentDialog={paymentDialog}
+        withdrawDialog={withdrawDialog}
+        balance={balance}
+        totalProfit={totalProfit}
+        onClosePayment={() => setPaymentDialog(false)}
+        onCloseWithdraw={() => setWithdrawDialog(false)}
+        onDeposit={handleDeposit}
+        onWithdraw={handleWithdraw}
+      />
 
       <footer className="border-t border-primary/20 bg-card/50 mt-16">
         <div className="container mx-auto px-4 py-8">
