@@ -97,7 +97,17 @@ const Index = () => {
     setSpinResult(null);
 
     setTimeout(() => {
-      const winAmount = Math.floor(Math.random() * (caseItem.maxWin - caseItem.minWin + 1)) + caseItem.minWin;
+      let lossPenalty = 0;
+      if (totalProfit > 100) {
+        lossPenalty = Math.min(0.3, (totalProfit - 100) / 1000);
+      }
+      
+      const baseRange = caseItem.maxWin - caseItem.minWin;
+      const lossZone = Math.floor(baseRange * lossPenalty);
+      const adjustedMin = caseItem.minWin;
+      const adjustedMax = caseItem.maxWin - lossZone;
+      
+      const winAmount = Math.floor(Math.random() * (adjustedMax - adjustedMin + 1)) + adjustedMin;
       const netProfit = winAmount - caseItem.price;
       
       setSpinResult(winAmount);
