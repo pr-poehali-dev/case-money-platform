@@ -85,6 +85,63 @@ const Index = () => {
     }
   };
 
+  const handleOpenSecretCase = () => {
+    if (balance < 1) {
+      toast.error('Недостаточно средств на балансе!');
+      return;
+    }
+
+    const secretCase: CaseType = {
+      id: 999,
+      name: 'Секретный',
+      price: balance,
+      minWin: 0,
+      maxWin: balance * 10,
+      rarity: 'legendary',
+      icon: '🎁'
+    };
+
+    setBalance(0);
+    setOpenCase(secretCase);
+    setIsSpinning(true);
+    setSpinResult(null);
+
+    setTimeout(() => {
+      let lossPenalty = 0;
+      if (totalProfit > 100) {
+        lossPenalty = Math.min(0.3, (totalProfit - 100) / 1000);
+      }
+      
+      const baseRange = secretCase.maxWin - secretCase.minWin;
+      const lossZone = Math.floor(baseRange * lossPenalty);
+      const adjustedMin = secretCase.minWin;
+      const adjustedMax = secretCase.maxWin - lossZone;
+      
+      const winAmount = Math.floor(Math.random() * (adjustedMax - adjustedMin + 1)) + adjustedMin;
+      const netProfit = winAmount - secretCase.price;
+      
+      setSpinResult(winAmount);
+      setBalance(prev => prev + winAmount);
+      setTotalProfit(prev => prev + netProfit);
+      setIsSpinning(false);
+
+      const historyItem: HistoryItem = {
+        id: Date.now(),
+        caseName: secretCase.name,
+        amount: netProfit,
+        result: netProfit > 0 ? 'win' : 'loss',
+        timestamp: new Date(),
+      };
+      setHistory(prev => [historyItem, ...prev].slice(0, 50));
+
+      if (netProfit > 0) {
+        toast.success(`Поздравляем! Вы выиграли ${winAmount}₽ (+${netProfit}₽)`);
+      } else {
+        toast.error(`Получено ${winAmount}₽ (${netProfit}₽)`);
+      }
+    }, 3000);
+  };
+
   const handleOpenCase = (caseItem: CaseType) => {
     if (balance < caseItem.price) {
       toast.error('Недостаточно средств на балансе!');
@@ -189,6 +246,25 @@ const Index = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+              {balance >= 1 && (
+                <Card 
+                  className="p-6 bg-gradient-to-br from-red-600/20 to-purple-600/20 border-2 border-red-500/50 hover:scale-105 transition-all duration-300 cursor-pointer group animate-pulse-glow"
+                  onClick={handleOpenSecretCase}
+                >
+                  <div className="text-center space-y-3">
+                    <div className="text-5xl group-hover:scale-110 transition-transform">🎰</div>
+                    <h3 className="font-bold text-lg text-red-400">Секретный</h3>
+                    <div className="space-y-1 text-sm text-muted-foreground">
+                      <p>Выигрыш: 0₽ - {(balance * 10).toFixed(0)}₽</p>
+                      <p className="text-xs text-red-400">Все или ничего!</p>
+                    </div>
+                    <Button className="w-full bg-red-600 hover:bg-red-700 text-white font-bold">
+                      Ва-банк {balance.toFixed(2)}₽
+                    </Button>
+                  </div>
+                </Card>
+              )}
+              
               {cases.map((caseItem) => (
                 <Card 
                   key={caseItem.id}
