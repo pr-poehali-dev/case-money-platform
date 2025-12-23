@@ -32,7 +32,9 @@ type TopPlayer = {
 };
 
 const Index = () => {
-  const [balance, setBalance] = useState(50);
+  const INITIAL_BALANCE = 5;
+  const [balance, setBalance] = useState(INITIAL_BALANCE);
+  const [totalProfit, setTotalProfit] = useState(0);
   const [openCase, setOpenCase] = useState<CaseType | null>(null);
   const [isSpinning, setIsSpinning] = useState(false);
   const [spinResult, setSpinResult] = useState<number | null>(null);
@@ -100,6 +102,7 @@ const Index = () => {
       
       setSpinResult(winAmount);
       setBalance(prev => prev + winAmount);
+      setTotalProfit(prev => prev + netProfit);
       setIsSpinning(false);
 
       const historyItem: HistoryItem = {
@@ -360,16 +363,23 @@ const Index = () => {
           </DialogHeader>
           
           <div className="space-y-4 py-4">
-            <div className="p-4 bg-primary/10 rounded-lg border border-primary/30">
-              <p className="text-sm text-muted-foreground mb-2">Доступно для вывода:</p>
-              <p className="text-3xl font-bold text-primary">{balance.toFixed(2)}₽</p>
+            <div className="space-y-3">
+              <div className="p-4 bg-card/50 rounded-lg border border-border">
+                <p className="text-sm text-muted-foreground mb-1">Текущий баланс:</p>
+                <p className="text-2xl font-bold text-foreground">{balance.toFixed(2)}₽</p>
+              </div>
+              
+              <div className="p-4 bg-primary/10 rounded-lg border border-primary/30">
+                <p className="text-sm text-muted-foreground mb-1">Доступно для вывода (чистая прибыль):</p>
+                <p className="text-3xl font-bold text-primary">{totalProfit > 0 ? totalProfit.toFixed(2) : '0.00'}₽</p>
+              </div>
             </div>
             
             <div className="space-y-3">
               <Button 
                 onClick={handleWithdraw}
                 className="w-full h-12 bg-primary hover:bg-primary/90 text-black font-bold"
-                disabled={balance < 100}
+                disabled={totalProfit < 100}
               >
                 Вывести на карту (мин. 100₽)
               </Button>
@@ -377,7 +387,7 @@ const Index = () => {
               <Button 
                 onClick={handleWithdraw}
                 className="w-full h-12 bg-gradient-to-r from-orange-600 to-yellow-500 hover:from-orange-700 hover:to-yellow-600 text-white font-bold"
-                disabled={balance < 50}
+                disabled={totalProfit < 50}
               >
                 Вывести в крипту (мин. 50₽)
               </Button>
